@@ -2,24 +2,30 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Bullet : MonoBehaviour
+public abstract class Bullet : MonoBehaviour
 {
-    public int damage;
+    public float damage;
 
-    [SerializeField] float destroy_time;
-    [SerializeField] float move_speed;
+    [SerializeField] protected float destroy_time;
+    [SerializeField] protected float move_speed;
 
-    Rigidbody2D rb;
+    protected Rigidbody2D rb;
 
-    void Awake()
+    protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
     }
 
-    void Start()
+    protected virtual void Start()
     {
-        rb.velocity = Vector3.up * move_speed;
+        Destroy();
+        Move();
+    }
 
+    protected void Destroy()
+    {
         Destroy(gameObject, destroy_time);
     }
+
+    protected abstract void Move();
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -16,20 +17,66 @@ public class Player : MonoBehaviour
     public float Durability
     {
         get { return durability; }
-        set { durability = value; }
+        set
+        {
+            durability = Mathf.Clamp(value, 0, max_durability);
+            if (durability <= 0)
+                Die();
+        }
     }
 
     float max_fuel;
     float fuel;
-    float fuel_decrease_per_second;
+    public float Fuel
+    {
+        get { return fuel; }
+        set
+        {
+            fuel = Mathf.Clamp(value, 0, max_fuel);
+            if (fuel <= 0)
+                Die();
+        }
+    }
+    float fuel_decrease;
 
     int repair_skill_repair;
     int repair_skill_use_number;
+    float repair_skill_delay;
     bool can_use_repair_skill;
+
+    void RepairSkill()
+    {
+        if (Input.GetKeyDown(KeyCode.J) && repair_skill_use_number > 0 && can_use_repair_skill == true)
+            StartCoroutine(RealRepairSkill());
+    }
+
+    IEnumerator RealRepairSkill()
+    {
+        can_use_repair_skill = false;
+
+        Durability += repair_skill_repair;
+        repair_skill_use_number--;
+
+        yield return new WaitForSeconds(repair_skill_delay);
+
+        can_use_repair_skill = true;
+    }
 
     int bomb_skill_damage;
     int bomb_skill_use_number;
+    float bomb_skill_delay;
     bool can_use_bomb_skill;
+
+    void BombSkill()
+    {
+        if (Input.GetKeyDown(KeyCode.K) && bomb_skill_use_number > 0 && can_use_bomb_skill == true)
+            StartCoroutine(RealBombSkill());
+    }
+
+    IEnumerator RealBombSkill()
+    {
+        yield return null;
+    }
 
     Rigidbody2D rb;
 
@@ -51,17 +98,8 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        Move();
         Attack();
-    }
-
-    void Move()
-    {
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
-
-        Vector2 dir = new Vector2(horizontal, vertical).normalized;
-        rb.velocity = dir * move_speed;
+        Fuel -= fuel_decrease;
     }
 
     void Attack()
@@ -69,7 +107,7 @@ public class Player : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) == false || can_attack == false)
             return;
 
-        can_attack = false; Debug.Log("A");
+        can_attack = false;
 
         Instantiate(bullet_prefab, transform.position, Quaternion.identity);
 
@@ -81,5 +119,32 @@ public class Player : MonoBehaviour
         yield return new WaitForSeconds(attack_delay);
 
         can_attack = true;
+    }
+
+    void FixedUpdate()
+    {
+        Move();
+    }
+
+    void Move()
+    {
+        float horizontal = Input.GetAxisRaw("Horizontal");
+        float vertical = Input.GetAxisRaw("Vertical");
+
+        Vector2 dir = new Vector2(horizontal, vertical).normalized * move_speed;
+        rb.velocity = dir;
+    }
+
+    void Die()
+    {
+        //Debug.Log("Die");
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("EnemyBullet"))
+        {
+            Durability -= other.GetComponent<Bullet>().damage;
+        }
     }
 }
